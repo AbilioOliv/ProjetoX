@@ -3,307 +3,439 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Gestão de Obras</title>
+    <title>Sistema GestorObra Pro</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Ícones Lucide -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- SheetJS para Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        .tab-content { display: none; }
+        body { font-family: 'ui-sans-serif', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+        .tab-content { display: none; animation: fadeIn 0.3s ease-in-out; }
         .tab-content.active { display: block; }
         .tab-btn.active { 
             border-bottom: 2px solid #4f46e5; 
             color: #4f46e5; 
             font-weight: 600;
+            background-color: #f3f4f6;
         }
-        /* Estilo para input de arquivo */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Inputs numéricos e de arquivo */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
         .file-input::file-selector-button {
-            background-color: #e5e7eb;
-            color: #374151;
-            border: none;
-            padding: 0.5rem 1rem;
-            margin-right: 1rem;
-            border-radius: 0.375rem;
-            cursor: pointer;
-            transition: background-color 0.2s;
+            background-color: #4f46e5; color: white; border: none; padding: 0.5rem 1rem;
+            margin-right: 1rem; border-radius: 0.375rem; cursor: pointer; transition: background 0.2s;
         }
-        .file-input::file-selector-button:hover {
-            background-color: #d1d5db;
-        }
-        .card-etapa {
-            transition: all 0.3s ease;
-        }
-        .card-etapa:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        .file-input::file-selector-button:hover { background-color: #4338ca; }
+
+        /* Fundo animado suave para o login */
+        .bg-gradient-login {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
         }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
+<body class="bg-gray-100 min-h-screen flex flex-col">
 
-    <!-- Barra de Navegação Superior -->
-    <nav class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex items-center gap-2">
-                    <i data-lucide="hammer" class="h-6 w-6 text-indigo-600"></i>
-                    <span class="text-xl font-bold text-gray-900">GestorObra</span>
+    <!-- ================================================================== -->
+    <!-- TELA DE LOGIN (Visível Inicialmente)                               -->
+    <!-- ================================================================== -->
+    <div id="login-screen" class="fixed inset-0 z-[100] bg-white flex min-h-screen">
+        
+        <!-- Lado Esquerdo: Arte / Branding -->
+        <div class="hidden lg:flex lg:w-1/2 bg-gradient-login items-center justify-center relative overflow-hidden">
+            <!-- Círculos decorativos -->
+            <div class="absolute top-0 left-0 w-64 h-64 bg-white opacity-10 rounded-full -translate-x-1/2 -translate-y-1/2"></div>
+            <div class="absolute bottom-0 right-0 w-96 h-96 bg-white opacity-10 rounded-full translate-x-1/3 translate-y-1/3"></div>
+            
+            <div class="text-center z-10 px-10">
+                <div class="bg-white/20 backdrop-blur-md p-6 rounded-2xl inline-block mb-6 shadow-xl">
+                    <i data-lucide="hammer" class="w-16 h-16 text-white"></i>
                 </div>
+                <h1 class="text-5xl font-bold text-white mb-4 tracking-tight">GestorObra</h1>
+                <p class="text-indigo-100 text-lg max-w-md mx-auto">
+                    Planejamento, Orçamento e Execução em um só lugar. O controle total da sua construção.
+                </p>
             </div>
         </div>
-    </nav>
 
-    <!-- Conteúdo Principal -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
-        <!-- Sistema de Abas (Categorias) -->
-        <div class="border-b border-gray-200 mb-6 overflow-x-auto">
-            <nav class="-mb-px flex space-x-8" aria-label="Tabs">
-                <button onclick="openTab('dados-obra')" id="tab-dados-obra" class="tab-btn active whitespace-nowrap py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 flex items-center gap-2">
-                    <i data-lucide="users" class="w-4 h-4"></i>
-                    1. Clientes & Obras
-                </button>
-                <button onclick="openTab('orcamento')" id="tab-orcamento" class="tab-btn whitespace-nowrap py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 flex items-center gap-2">
-                    <i data-lucide="calculator" class="w-4 h-4"></i>
-                    2. Orçamento & Itens
-                </button>
-                <!-- NOVA ABA 3 -->
-                <button onclick="openTab('execucao')" id="tab-execucao" class="tab-btn whitespace-nowrap py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 flex items-center gap-2">
-                    <i data-lucide="hard-hat" class="w-4 h-4"></i>
-                    3. Execução & Consumo
-                </button>
-            </nav>
-        </div>
+        <!-- Lado Direito: Formulário -->
+        <div class="w-full lg:w-1/2 flex items-center justify-center bg-gray-50 p-8">
+            <div class="w-full max-w-md space-y-8 bg-white p-10 rounded-2xl shadow-lg border border-gray-100">
+                <div class="text-center lg:hidden">
+                    <i data-lucide="hammer" class="w-12 h-12 text-indigo-600 mx-auto mb-2"></i>
+                    <h2 class="text-2xl font-bold text-gray-900">GestorObra</h2>
+                </div>
+                
+                <div>
+                    <h2 class="text-3xl font-bold text-gray-900 text-center lg:text-left">Bem-vindo</h2>
+                    <p class="mt-2 text-sm text-gray-600 text-center lg:text-left">Por favor, entre com suas credenciais.</p>
+                </div>
 
-        <!-- ========================================== -->
-        <!-- CATEGORIA 1: DADOS DA OBRA & CLIENTE       -->
-        <!-- ========================================== -->
-        <div id="dados-obra" class="tab-content active animate-fade-in">
-            <div id="view-lista-clientes">
-                <div class="bg-white shadow rounded-lg p-6 mb-6">
-                    <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
-                        <h2 class="text-xl font-bold text-gray-900">Gestão de Clientes</h2>
-                        <button onclick="mostrarFormularioCadastro()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-colors">
-                            <i data-lucide="plus-circle" class="w-4 h-4"></i>
-                            Novo Cliente
+                <form class="mt-8 space-y-6" onsubmit="event.preventDefault(); realizarLogin();">
+                    <div class="space-y-4">
+                        <div>
+                            <label for="email-login" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i data-lucide="mail" class="h-5 w-5 text-gray-400"></i>
+                                </div>
+                                <input id="email-login" name="email" type="email" autocomplete="email" required class="appearance-none block w-full pl-10 px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-all" placeholder="teste@teste">
+                            </div>
+                        </div>
+                        <div>
+                            <label for="password-login" class="block text-sm font-medium text-gray-700 mb-1">Senha</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i data-lucide="lock" class="h-5 w-5 text-gray-400"></i>
+                                </div>
+                                <input id="password-login" name="password" type="password" autocomplete="current-password" required class="appearance-none block w-full pl-10 px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-all" placeholder="123">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="login-error" class="hidden text-red-600 text-sm text-center bg-red-50 p-2 rounded border border-red-200">
+                        Usuário ou senha incorretos.
+                    </div>
+
+                    <div>
+                        <button type="submit" class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors shadow-md hover:shadow-lg">
+                            Entrar no Sistema
                         </button>
                     </div>
+                </form>
+                <div class="text-center text-xs text-gray-400 mt-4">
+                    Versão 1.0.2 - Acesso Restrito
+                </div>
+            </div>
+        </div>
+    </div>
 
-                    <!-- Barra de Pesquisa -->
-                    <div class="relative mb-6">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <i data-lucide="search" class="h-5 w-5 text-gray-400"></i>
+
+    <!-- ================================================================== -->
+    <!-- CONTEÚDO PRINCIPAL DO SISTEMA (Oculto até o login)                 -->
+    <!-- ================================================================== -->
+    <div id="app-content" class="hidden flex-col min-h-screen">
+        
+        <!-- Barra Superior -->
+        <nav class="bg-white shadow-md border-b border-gray-200 sticky top-0 z-50">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between h-16">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-indigo-600 p-2 rounded-lg">
+                            <i data-lucide="hammer" class="h-6 w-6 text-white"></i>
                         </div>
-                        <input type="text" id="input-busca-cliente" onkeyup="filtrarClientes()" 
-                               class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" 
-                               placeholder="Pesquisar por Nome, CPF ou CNPJ...">
+                        <div>
+                            <h1 class="text-xl font-bold text-gray-900 leading-none">GestorObra</h1>
+                            <span class="text-xs text-gray-500">Sistema Integrado</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Botões de Sistema -->
+                    <div class="flex items-center gap-2">
+                        <button onclick="baixarBackup()" class="text-gray-600 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2 hover:bg-gray-50 transition-colors" title="Salvar dados em arquivo JSON">
+                            <i data-lucide="save" class="w-4 h-4"></i> <span class="hidden sm:inline">Salvar Backup</span>
+                        </button>
+                        <label class="text-gray-600 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2 hover:bg-gray-50 transition-colors cursor-pointer" title="Carregar dados de arquivo JSON">
+                            <i data-lucide="upload-cloud" class="w-4 h-4"></i> <span class="hidden sm:inline">Carregar Backup</span>
+                            <input type="file" id="input-backup" accept=".json" class="hidden" onchange="carregarBackup(this)">
+                        </label>
+                        <div class="h-6 w-px bg-gray-300 mx-2"></div>
+                        <button onclick="logout()" class="text-red-500 hover:text-red-700 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2 hover:bg-red-50 transition-colors">
+                            <i data-lucide="log-out" class="w-4 h-4"></i> Sair
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Abas de Navegação -->
+        <div class="bg-white border-b border-gray-200">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <nav class="-mb-px flex space-x-4 overflow-x-auto" aria-label="Tabs">
+                    <button onclick="openTab('dados-obra')" id="tab-dados-obra" class="tab-btn active py-4 px-4 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 flex items-center gap-2 whitespace-nowrap">
+                        <i data-lucide="users" class="w-4 h-4"></i> 1. Clientes
+                    </button>
+                    <button onclick="openTab('orcamento')" id="tab-orcamento" class="tab-btn py-4 px-4 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 flex items-center gap-2 whitespace-nowrap">
+                        <i data-lucide="calculator" class="w-4 h-4"></i> 2. Orçamento
+                    </button>
+                    <button onclick="openTab('execucao')" id="tab-execucao" class="tab-btn py-4 px-4 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 flex items-center gap-2 whitespace-nowrap">
+                        <i data-lucide="hard-hat" class="w-4 h-4"></i> 3. Execução
+                    </button>
+                    <button onclick="openTab('docs')" id="tab-docs" class="tab-btn py-4 px-4 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 flex items-center gap-2 whitespace-nowrap">
+                        <i data-lucide="file-text" class="w-4 h-4"></i> 4. Documentação (PDF)
+                    </button>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Conteúdo Principal -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full">
+            
+            <!-- ABA 1: CLIENTES -->
+            <div id="dados-obra" class="tab-content active">
+                <div id="view-lista-clientes">
+                    <div class="bg-white shadow rounded-lg p-6 mb-6">
+                        <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
+                            <h2 class="text-xl font-bold text-gray-900">Carteira de Clientes</h2>
+                            <button onclick="mostrarFormularioCadastro()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-colors shadow-sm">
+                                <i data-lucide="plus-circle" class="w-4 h-4"></i> Novo Cliente
+                            </button>
+                        </div>
+
+                        <div class="relative mb-6">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><i data-lucide="search" class="h-5 w-5 text-gray-400"></i></div>
+                            <input type="text" id="input-busca-cliente" onkeyup="filtrarClientes()" class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" placeholder="Buscar por Nome, CPF ou CNPJ...">
+                        </div>
+
+                        <div class="overflow-x-auto border border-gray-200 rounded-lg">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Cliente / Empresa</th>
+                                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Documento</th>
+                                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Local Obra</th>
+                                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Contato</th>
+                                        <th class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbody-clientes" class="bg-white divide-y divide-gray-200"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="view-form-cliente" class="hidden">
+                    <div class="bg-white shadow rounded-lg p-6 max-w-4xl mx-auto">
+                        <div class="flex justify-between items-center mb-6 border-b pb-4">
+                            <h2 class="text-xl font-bold text-gray-900">Cadastrar Novo Cliente</h2>
+                            <button onclick="cancelarCadastro()" class="text-gray-500 hover:text-gray-700 text-sm">Cancelar</button>
+                        </div>
+                        <form id="form-cadastro" onsubmit="event.preventDefault(); salvarCliente();">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                <div class="md:col-span-2">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Nome Completo / Razão Social</label>
+                                    <input type="text" id="cad-nome" class="block w-full border-gray-300 rounded-md shadow-sm p-2 border focus:ring-indigo-500 focus:border-indigo-500" required>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">CPF / CNPJ</label>
+                                    <input type="text" id="cad-doc" class="block w-full border-gray-300 rounded-md shadow-sm p-2 border focus:ring-indigo-500 focus:border-indigo-500" required>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Telefone / Celular</label>
+                                    <input type="text" id="cad-tel" class="block w-full border-gray-300 rounded-md shadow-sm p-2 border focus:ring-indigo-500 focus:border-indigo-500">
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Endereço Residencial/Comercial</label>
+                                    <input type="text" id="cad-endereco" class="block w-full border-gray-300 rounded-md shadow-sm p-2 border focus:ring-indigo-500 focus:border-indigo-500">
+                                </div>
+                                <div class="md:col-span-2 pt-4 border-t">
+                                    <label class="block text-sm font-medium text-indigo-700 mb-1">Endereço da Obra</label>
+                                    <input type="text" id="cad-obra-endereco" class="block w-full border-indigo-200 bg-indigo-50 rounded-md shadow-sm p-2 border focus:ring-indigo-500 focus:border-indigo-500" placeholder="Local onde será executado o serviço">
+                                </div>
+                            </div>
+                            <div class="flex justify-end gap-3">
+                                <button type="submit" class="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 shadow-sm font-medium">Salvar Cliente</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ABA 2: ORÇAMENTO -->
+            <div id="orcamento" class="tab-content">
+                <div class="bg-white shadow rounded-lg p-6">
+                    <div class="flex flex-col sm:flex-row justify-between items-center mb-6 border-b pb-4 gap-4">
+                        <h2 class="text-lg font-medium text-gray-900 flex items-center gap-2">
+                            <i data-lucide="shopping-cart" class="w-5 h-5 text-gray-500"></i>
+                            Planejamento Orçamentário
+                        </h2>
+                        <div class="text-right bg-gray-50 px-4 py-2 rounded-lg border border-gray-200">
+                            <span class="text-xs text-gray-500 uppercase font-bold tracking-wider">Total Previsto</span>
+                            <span id="display-total" class="block text-2xl font-bold text-indigo-600">R$ 0,00</span>
+                        </div>
                     </div>
 
-                    <!-- Lista de Resultados -->
-                    <div class="overflow-x-auto border border-gray-200 rounded-md">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
+                    <!-- Importação XML -->
+                    <div class="mb-6">
+                         <label class="block text-sm font-medium text-gray-700 mb-2">Importar Itens (XML ou Excel)</label>
+                         <div class="flex items-center gap-2">
+                             <input type="file" id="xml-input" accept=".xml,.xlsx" class="file-input block w-full text-sm text-gray-500 border border-gray-300 rounded-md">
+                         </div>
+                         <p class="text-xs text-gray-400 mt-1">Suporta XML (tags: Descricao, Qtd, Valor) ou Excel (colunas: Descricao, Unidade, Quantidade, PrecoUnitario).</p>
+                    </div>
+
+                    <!-- Formulário Rápido -->
+                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 mb-6">
+                        <h3 class="text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide">Adicionar Item Manualmente</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+                            <div class="md:col-span-4">
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Descrição</label>
+                                <input type="text" id="item-desc" class="w-full border-gray-300 rounded-md shadow-sm border p-2 text-sm" placeholder="Ex: Cimento CP-II">
+                            </div>
+                            <div class="md:col-span-3">
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Etapa</label>
+                                <select id="item-etapa" class="w-full border-gray-300 rounded-md shadow-sm border p-2 text-sm bg-white">
+                                    <option value="Fundação">Fundação</option>
+                                    <option value="Alvenaria">Alvenaria</option>
+                                    <option value="Pilares e Vigas">Pilares e Vigas</option>
+                                    <option value="Instalação Elétrica">Instalação Elétrica</option>
+                                    <option value="Estrutura das Lajes">Estrutura das Lajes</option>
+                                    <option value="Cobertura">Cobertura</option>
+                                    <option value="Revestimento">Revestimento</option>
+                                    <option value="Impermeabilização">Impermeabilização</option>
+                                    <option value="Acabamento">Acabamento</option>
+                                </select>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Qtd.</label>
+                                <input type="number" id="item-qtd" class="w-full border-gray-300 rounded-md shadow-sm border p-2 text-sm" placeholder="0">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Valor Unit.</label>
+                                <input type="number" id="item-val" class="w-full border-gray-300 rounded-md shadow-sm border p-2 text-sm" placeholder="R$ 0.00">
+                            </div>
+                            <div class="md:col-span-1">
+                                <button onclick="adicionarItemManual()" class="w-full bg-green-600 hover:bg-green-700 text-white py-2 px-3 rounded-md shadow-sm flex justify-center items-center transition-colors" title="Adicionar">
+                                    <i data-lucide="plus" class="w-5 h-5"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabela -->
+                    <div class="overflow-x-auto border border-gray-200 rounded-lg max-h-[500px] overflow-y-auto">
+                        <table class="min-w-full divide-y divide-gray-200 relative">
+                            <thead class="bg-gray-50 sticky top-0 shadow-sm z-10">
                                 <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome / Razão Social</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CPF / CNPJ</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Obra / Local</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contato</th>
-                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Item</th>
+                                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Etapa</th>
+                                    <th class="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase">Qtd</th>
+                                    <th class="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase">Unit.</th>
+                                    <th class="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase">Total</th>
+                                    <th class="px-4 py-3"></th>
                                 </tr>
                             </thead>
-                            <tbody id="tbody-clientes" class="bg-white divide-y divide-gray-200"></tbody>
+                            <tbody id="tabela-corpo" class="bg-white divide-y divide-gray-200"></tbody>
                         </table>
                     </div>
-                </div>
-            </div>
-
-            <!-- Formulário de Cadastro (Oculto) -->
-            <div id="view-form-cliente" class="hidden">
-                <div class="bg-white shadow rounded-lg p-6">
-                    <div class="flex justify-between items-center mb-6 border-b pb-4">
-                        <h2 class="text-xl font-bold text-gray-900 flex items-center gap-2">
-                            <i data-lucide="user-plus" class="w-5 h-5"></i>
-                            Cadastrar Novo Cliente
-                        </h2>
-                        <button onclick="cancelarCadastro()" class="text-gray-500 hover:text-gray-700 text-sm">Cancelar</button>
+                    <div class="mt-3 flex justify-end">
+                        <button onclick="limparTabela()" class="text-xs text-red-500 hover:text-red-700 hover:underline flex items-center gap-1">
+                            <i data-lucide="trash" class="w-3 h-3"></i> Limpar todos os itens
+                        </button>
                     </div>
-                    <form id="form-cadastro" onsubmit="event.preventDefault(); salvarCliente();">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                            <div class="md:col-span-2">
-                                <label class="block text-sm font-medium text-gray-700">Nome</label>
-                                <input type="text" id="cad-nome" class="mt-1 block w-full border p-2 rounded-md" required>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Documento</label>
-                                <input type="text" id="cad-doc" class="mt-1 block w-full border p-2 rounded-md" required>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Telefone</label>
-                                <input type="text" id="cad-tel" class="mt-1 block w-full border p-2 rounded-md">
-                            </div>
-                            <div class="md:col-span-2">
-                                <label class="block text-sm font-medium text-gray-700">Endereço</label>
-                                <input type="text" id="cad-endereco" class="mt-1 block w-full border p-2 rounded-md">
-                            </div>
-                            <div class="md:col-span-2">
-                                <label class="block text-sm font-medium text-gray-700">Endereço Obra</label>
-                                <input type="text" id="cad-obra-endereco" class="mt-1 block w-full border p-2 rounded-md">
-                            </div>
-                        </div>
-                        <div class="flex justify-end gap-3">
-                            <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Salvar</button>
-                        </div>
-                    </form>
                 </div>
             </div>
-        </div>
 
-        <!-- ========================================== -->
-        <!-- CATEGORIA 2: ORÇAMENTO & ITENS             -->
-        <!-- ========================================== -->
-        <div id="orcamento" class="tab-content">
-            <div class="bg-white shadow rounded-lg p-6">
-                
-                <div class="flex justify-between items-center mb-6 border-b pb-4">
-                    <h2 class="text-lg font-medium text-gray-900 flex items-center gap-2">
-                        <i data-lucide="shopping-cart" class="w-5 h-5 text-gray-500"></i>
-                        Orçamento Detalhado
+            <!-- ABA 3: EXECUÇÃO -->
+            <div id="execucao" class="tab-content">
+                <div class="mb-6 bg-yellow-50 border border-yellow-200 p-4 rounded-lg text-yellow-800 text-sm flex items-start gap-3 shadow-sm">
+                    <i data-lucide="info" class="w-5 h-5 flex-shrink-0 mt-0.5"></i>
+                    <div>
+                        <strong class="block font-bold mb-1">Modo de Controle de Execução</strong>
+                        Esta tela puxa automaticamente os itens cadastrados no Orçamento. 
+                        Preencha o campo <strong>"Qtd Realizada"</strong> conforme a obra avança. 
+                        O sistema indicará em <span class="text-red-600 font-bold">vermelho</span> se houver excesso ou em <span class="text-green-600 font-bold">verde</span> se houver sobra.
+                    </div>
+                </div>
+                <div id="container-fases-execucao" class="space-y-6"></div>
+            </div>
+
+            <!-- ABA 4: DOCUMENTAÇÃO E PDF -->
+            <div id="docs" class="tab-content">
+                <div class="bg-white shadow rounded-lg p-6 h-[800px] flex flex-col">
+                    <h2 class="text-lg font-medium text-gray-900 mb-4 border-b pb-2 flex items-center gap-2">
+                        <i data-lucide="file-text" class="w-5 h-5 text-gray-500"></i> Central de Projetos (PDF)
                     </h2>
-                    <div class="text-right">
-                        <span class="text-sm text-gray-500">Total Previsto:</span>
-                        <span id="display-total" class="block text-2xl font-bold text-indigo-600">R$ 0,00</span>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Carregar Arquivo do Projeto (.pdf)</label>
+                            <input type="file" id="pdf-upload" accept=".pdf" class="file-input block w-full text-sm text-gray-500 border border-gray-300 rounded-md">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Versão / Revisão</label>
+                            <input type="text" class="block w-full border-gray-300 rounded-md shadow-sm p-2 border sm:text-sm" placeholder="Ex: Rev. 02 - Final">
+                        </div>
                     </div>
-                </div>
 
-                <!-- Importação XML -->
-                <div class="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
-                    <h3 class="text-sm font-semibold text-blue-800 mb-2 flex items-center gap-2">
-                        <i data-lucide="file-code" class="w-4 h-4"></i> Importar XML
-                    </h3>
-                    <input type="file" id="xml-input" accept=".xml" class="file-input block w-full text-sm text-gray-500">
-                </div>
-
-                <!-- Formulário de Adição de Item -->
-                <div class="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6 items-end bg-gray-50 p-4 rounded-md border border-gray-200">
-                    <div class="md:col-span-2">
-                        <label class="block text-xs font-medium text-gray-500 uppercase">Descrição</label>
-                        <input type="text" id="item-desc" class="w-full border-gray-300 rounded-md shadow-sm border p-2 text-sm">
+                    <div id="pdf-container" class="flex-grow border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 flex items-center justify-center relative overflow-hidden">
+                        <div id="pdf-placeholder" class="text-center p-10">
+                            <i data-lucide="file-up" class="w-12 h-12 text-gray-300 mx-auto mb-3"></i>
+                            <p class="text-gray-400">Nenhum PDF carregado.<br>Selecione um arquivo acima para visualizar.</p>
+                        </div>
+                        <embed id="pdf-embed" src="" type="application/pdf" class="hidden w-full h-full absolute inset-0">
                     </div>
-                    <!-- NOVO CAMPO: SELETOR DE ETAPA -->
-                    <div class="md:col-span-1">
-                        <label class="block text-xs font-medium text-gray-500 uppercase">Etapa</label>
-                        <select id="item-etapa" class="w-full border-gray-300 rounded-md shadow-sm border p-2 text-sm">
-                            <option value="Fundação">Fundação</option>
-                            <option value="Alvenaria">Alvenaria</option>
-                            <option value="Pilares e Vigas">Pilares e Vigas</option>
-                            <option value="Instalação Elétrica">Instalação Elétrica</option>
-                            <option value="Estrutura das Lajes">Estrutura das Lajes</option>
-                            <option value="Cobertura">Cobertura</option>
-                            <option value="Revestimento">Revestimento</option>
-                            <option value="Impermeabilização">Impermeabilização</option>
-                            <option value="Acabamento">Acabamento</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-gray-500 uppercase">Qtd</label>
-                        <input type="number" id="item-qtd" class="w-full border-gray-300 rounded-md shadow-sm border p-2 text-sm">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-gray-500 uppercase">Valor Unit.</label>
-                        <input type="number" id="item-val" class="w-full border-gray-300 rounded-md shadow-sm border p-2 text-sm">
-                    </div>
-                    <button onclick="adicionarItemManual()" class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-md text-sm font-medium flex justify-center items-center gap-1 transition-colors">
-                        <i data-lucide="plus" class="w-4 h-4"></i> Add
-                    </button>
-                </div>
-
-                <!-- Tabela de Itens -->
-                <div class="overflow-x-auto border border-gray-200 rounded-lg max-h-[500px] overflow-y-auto">
-                    <table class="min-w-full divide-y divide-gray-200 sticky top-0">
-                        <thead class="bg-gray-50 sticky top-0 z-10 shadow-sm">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Etapa</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Qtd</th>
-                                <th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-10">F</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit.</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
-                                <th class="px-6 py-3"></th>
-                            </tr>
-                        </thead>
-                        <tbody id="tabela-corpo" class="bg-white divide-y divide-gray-200"></tbody>
-                    </table>
-                </div>
-                <div class="mt-4 flex justify-end">
-                    <button onclick="limparTabela()" class="text-xs text-red-500 hover:text-red-700 hover:underline">Limpar lista</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- ========================================== -->
-        <!-- CATEGORIA 3: EXECUÇÃO E ETAPAS (NOVO)      -->
-        <!-- ========================================== -->
-        <div id="execucao" class="tab-content">
-            <div class="mb-6 bg-yellow-50 border border-yellow-200 p-4 rounded-md text-yellow-800 text-sm flex items-center gap-3">
-                <i data-lucide="info" class="w-5 h-5"></i>
-                <div>
-                    <strong class="block">Modo de Execução</strong>
-                    Os itens cadastrados na aba "Orçamento" aparecem aqui automaticamente. Preencha o campo "Qtd Real" para controlar o consumo.
-                    Se usar mais do que o previsto, o sistema alertará em vermelho.
                 </div>
             </div>
 
-            <!-- Container para os Cards das Fases -->
-            <div id="container-fases-execucao" class="space-y-8">
-                <!-- Os cards serão gerados via JS aqui -->
-            </div>
-        </div>
+        </main>
 
-    </main>
+        <footer class="bg-white border-t border-gray-200 mt-auto py-6">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
+                <p class="text-sm text-gray-500">© 2025 Sistema GestorObra. Executando localmente.</p>
+                <button onclick="downloadCodigoFonte()" class="text-xs text-indigo-600 hover:underline">Baixar este código fonte (.html)</button>
+            </div>
+        </footer>
+    </div>
 
     <script>
-        // Inicializa Ícones
+        // --- INICIALIZAÇÃO ---
         lucide.createIcons();
+        
+        // --- LÓGICA DE LOGIN ---
+        function realizarLogin() {
+            const email = document.getElementById('email-login').value;
+            const pass = document.getElementById('password-login').value;
+            const errorMsg = document.getElementById('login-error');
 
-        // Estado da Aplicação
-        let dbClientes = [{ id: 1, nome: 'Cliente Exemplo', doc: '000.000.000-00', tel: '9999-9999', endereco: 'Rua A', obraEndereco: 'Rua B', valorIni: 0, valorProj: 0 }];
-        let itensOrcamento = []; // Array principal de dados do orçamento
-        let totalGeral = 0;
-
-        // Fases do Projeto (Definição das etapas)
-        const fasesObra = [
-            "Fundação", 
-            "Alvenaria", 
-            "Pilares e Vigas", 
-            "Instalação Elétrica", 
-            "Estrutura das Lajes", 
-            "Cobertura", 
-            "Revestimento", 
-            "Impermeabilização", 
-            "Acabamento"
-        ];
-
-        // --- Lógica das Abas ---
-        function openTab(tabId) {
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(b => {
-                b.classList.remove('active');
-                b.classList.remove('text-indigo-600');
-                b.classList.remove('border-indigo-500');
-            });
-            document.getElementById(tabId).classList.add('active');
-            document.getElementById(`tab-${tabId}`).classList.add('active');
-
-            // Se abriu a aba de execução, renderiza ela
-            if (tabId === 'execucao') {
-                renderizarAbaExecucao();
+            if (email === 'teste@teste' && pass === '123') {
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('app-content').classList.remove('hidden');
+                document.getElementById('app-content').classList.add('flex');
+                errorMsg.classList.add('hidden');
+            } else {
+                errorMsg.classList.remove('hidden');
+                // Shake effect (opcional)
+                const form = document.querySelector('form');
+                form.classList.add('animate-pulse');
+                setTimeout(() => form.classList.remove('animate-pulse'), 500);
             }
         }
 
-        // ==========================================
-        // CLIENTES
-        // ==========================================
+        function logout() {
+            document.getElementById('login-screen').classList.remove('hidden');
+            document.getElementById('app-content').classList.add('hidden');
+            document.getElementById('app-content').classList.remove('flex');
+            document.getElementById('email-login').value = '';
+            document.getElementById('password-login').value = '';
+        }
+
+        // Dados em Memória
+        let dbClientes = [{ id: 1, nome: 'Cliente Modelo', doc: '000.000.000-00', tel: '99 99999-9999', endereco: 'Rua Exemplo, 123', obraEndereco: 'Av. da Obra, 1000' }];
+        let itensOrcamento = [];
+        let totalGeral = 0;
+        const fasesObra = ["Fundação", "Alvenaria", "Pilares e Vigas", "Instalação Elétrica", "Estrutura das Lajes", "Cobertura", "Revestimento", "Impermeabilização", "Acabamento"];
+
+        // --- NAVEGAÇÃO ---
+        function openTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => {
+                b.classList.remove('active', 'text-indigo-600', 'bg-gray-50');
+                b.classList.add('text-gray-500');
+            });
+            document.getElementById(tabId).classList.add('active');
+            const btn = document.getElementById(`tab-${tabId}`);
+            btn.classList.add('active', 'text-indigo-600');
+            btn.classList.remove('text-gray-500');
+
+            if (tabId === 'execucao') renderizarExecucao();
+        }
+
+        // --- CLIENTES ---
         function mostrarFormularioCadastro() {
             document.getElementById('view-lista-clientes').classList.add('hidden');
             document.getElementById('view-form-cliente').classList.remove('hidden');
@@ -314,16 +446,15 @@
             document.getElementById('view-lista-clientes').classList.remove('hidden');
         }
         function salvarCliente() {
-            const novo = {
+            dbClientes.push({
                 id: Date.now(),
                 nome: document.getElementById('cad-nome').value,
                 doc: document.getElementById('cad-doc').value,
                 tel: document.getElementById('cad-tel').value,
                 endereco: document.getElementById('cad-endereco').value,
                 obraEndereco: document.getElementById('cad-obra-endereco').value
-            };
-            dbClientes.push(novo);
-            alert('Cliente salvo!');
+            });
+            alert('Cliente salvo com sucesso!');
             cancelarCadastro();
             filtrarClientes();
         }
@@ -333,256 +464,220 @@
             tbody.innerHTML = '';
             const filtrados = dbClientes.filter(c => c.nome.toLowerCase().includes(termo) || c.doc.includes(termo));
             
-            if (filtrados.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-500">Nenhum cliente encontrado.</td></tr>`;
+            if(filtrados.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-gray-400">Nenhum registro encontrado.</td></tr>`;
                 return;
             }
-
             filtrados.forEach(c => {
                 tbody.innerHTML += `
-                    <tr>
-                        <td class="px-6 py-4 text-sm font-medium text-gray-900">${c.nome}</td>
-                        <td class="px-6 py-4 text-sm text-gray-500">${c.doc}</td>
-                        <td class="px-6 py-4 text-sm text-gray-500">${c.obraEndereco || '-'}</td>
-                        <td class="px-6 py-4 text-sm text-gray-500">${c.tel}</td>
-                        <td class="px-6 py-4 text-right text-sm font-medium">
-                           <button class="text-red-600 hover:text-red-900" onclick="excluirCliente(${c.id})"><i data-lucide="trash" class="w-4 h-4"></i></button>
+                    <tr class="hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${c.nome}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${c.doc}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${c.obraEndereco || '-'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${c.tel}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm">
+                            <button onclick="excluirCliente(${c.id})" class="text-red-500 hover:text-red-700 p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                         </td>
-                    </tr>
-                `;
+                    </tr>`;
             });
             lucide.createIcons();
         }
         function excluirCliente(id) {
-            if(confirm('Excluir?')) {
+            if(confirm("Remover este cliente?")) {
                 dbClientes = dbClientes.filter(c => c.id !== id);
                 filtrarClientes();
             }
         }
 
-        // ==========================================
-        // ORÇAMENTO (TAB 2)
-        // ==========================================
-        
-        // Renderiza a tabela do orçamento baseada no array itensOrcamento
-        function renderizarTabelaOrcamento() {
-            const tbody = document.getElementById('tabela-corpo');
-            tbody.innerHTML = '';
-            totalGeral = 0;
-
-            itensOrcamento.forEach((item, index) => {
-                totalGeral += item.total;
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td class="px-6 py-4 text-sm text-gray-900">${item.desc}</td>
-                    <td class="px-6 py-4 text-sm text-gray-500"><span class="bg-gray-100 px-2 py-1 rounded text-xs">${item.etapa}</span></td>
-                    <td class="px-6 py-4 text-sm text-gray-500">${item.qtd}</td>
-                    <td class="px-2 py-4 text-center"><input type="checkbox" class="cursor-pointer" ${item.flag ? 'checked' : ''}></td>
-                    <td class="px-6 py-4 text-sm text-gray-500">${item.val.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</td>
-                    <td class="px-6 py-4 text-sm font-bold text-gray-700">${item.total.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</td>
-                    <td class="px-6 py-4 text-right">
-                        <button onclick="removerItem(${index})" class="text-red-600 hover:text-red-900"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-            
-            document.getElementById('display-total').innerText = totalGeral.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
-            lucide.createIcons();
-        }
-
+        // --- ORÇAMENTO ---
         function adicionarItemManual() {
             const desc = document.getElementById('item-desc').value;
             const qtd = parseFloat(document.getElementById('item-qtd').value);
             const val = parseFloat(document.getElementById('item-val').value);
             const etapa = document.getElementById('item-etapa').value;
 
-            if (!desc || isNaN(qtd) || isNaN(val)) {
-                alert("Preencha todos os campos corretamente");
-                return;
-            }
+            if(!desc || isNaN(qtd) || isNaN(val)) return alert("Preencha todos os campos.");
 
-            // Adiciona ao array principal
             itensOrcamento.push({
                 id: Date.now(),
-                desc,
-                qtd,
-                val,
-                etapa,
+                desc, qtd, val, etapa,
                 total: qtd * val,
-                flag: false,
-                qtdRealizada: 0 // Campo para a etapa 3
+                qtdRealizada: 0
             });
-
-            // Limpa campos
+            
+            // Limpar
             document.getElementById('item-desc').value = '';
             document.getElementById('item-qtd').value = '';
             document.getElementById('item-val').value = '';
             document.getElementById('item-desc').focus();
-
-            renderizarTabelaOrcamento();
+            
+            renderizarOrcamento();
         }
 
-        function removerItem(index) {
-            itensOrcamento.splice(index, 1);
-            renderizarTabelaOrcamento();
+        function renderizarOrcamento() {
+            const tbody = document.getElementById('tabela-corpo');
+            tbody.innerHTML = '';
+            totalGeral = 0;
+            
+            itensOrcamento.forEach((item, idx) => {
+                totalGeral += item.total;
+                tbody.innerHTML += `
+                    <tr class="hover:bg-gray-50 border-b border-gray-100">
+                        <td class="px-4 py-3 text-sm text-gray-900">${item.desc}</td>
+                        <td class="px-4 py-3 text-sm text-gray-500"><span class="px-2 py-1 rounded bg-indigo-50 text-indigo-700 text-xs font-semibold">${item.etapa}</span></td>
+                        <td class="px-4 py-3 text-sm text-gray-700 text-center">${item.qtd}</td>
+                        <td class="px-4 py-3 text-sm text-gray-500 text-right">${item.val.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</td>
+                        <td class="px-4 py-3 text-sm font-bold text-gray-800 text-right">${item.total.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</td>
+                        <td class="px-4 py-3 text-right">
+                            <button onclick="removerItem(${idx})" class="text-red-400 hover:text-red-600"><i data-lucide="trash" class="w-4 h-4"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+            document.getElementById('display-total').innerText = totalGeral.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
+            lucide.createIcons();
         }
+        function removerItem(idx) { itensOrcamento.splice(idx, 1); renderizarOrcamento(); }
+        function limparTabela() { if(confirm("Apagar tudo?")) { itensOrcamento = []; renderizarOrcamento(); } }
 
-        function limparTabela() {
-            if(confirm("Apagar tudo?")) {
-                itensOrcamento = [];
-                renderizarTabelaOrcamento();
-            }
-        }
-
-        // Importação XML (Adaptada para o novo formato)
+        // --- IMPORTAÇÃO ---
         document.getElementById('xml-input').addEventListener('change', function(e) {
             const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(ev) {
-                const parser = new DOMParser();
-                const xml = parser.parseFromString(ev.target.result, "text/xml");
-                const els = xml.getElementsByTagName("*");
-                let count = 0;
-                
-                for (let i=0; i<els.length; i++) {
-                    const el = els[i];
-                    const d = el.querySelector("Descricao, Description")?.textContent;
-                    const q = parseFloat(el.querySelector("Quantidade, Qtd")?.textContent);
-                    const v = parseFloat(el.querySelector("Valor, Preco")?.textContent);
-                    
-                    if (d && !isNaN(q) && !isNaN(v)) {
-                        itensOrcamento.push({
-                            id: Date.now() + i,
-                            desc: d, qtd: q, val: v,
-                            etapa: "Fundação", // Padrão se vier sem etapa
-                            total: q*v, flag: false, qtdRealizada: 0
-                        });
-                        count++;
+            if(!file) return;
+            
+            if (file.name.endsWith('.xml')) {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    const parser = new DOMParser();
+                    const xml = parser.parseFromString(ev.target.result, "text/xml");
+                    const els = xml.getElementsByTagName("*");
+                    let count = 0;
+                    for(let i=0; i<els.length; i++) {
+                        const d = els[i].querySelector("Descricao")?.textContent;
+                        const q = parseFloat(els[i].querySelector("Quantidade")?.textContent);
+                        const v = parseFloat(els[i].querySelector("Valor")?.textContent);
+                        if(d && !isNaN(q) && !isNaN(v)) {
+                            itensOrcamento.push({id: Date.now()+i, desc: d, qtd: q, val: v, etapa: "Fundação", total: q*v, qtdRealizada: 0});
+                            count++;
+                        }
                     }
-                }
-                if (count > 0) {
-                    alert(`${count} importados!`);
-                    renderizarTabelaOrcamento();
-                }
-                e.target.value = '';
-            };
-            reader.readAsText(file);
+                    if(count>0) { alert(`${count} itens importados!`); renderizarOrcamento(); }
+                };
+                reader.readAsText(file);
+            } else if (file.name.endsWith('.xlsx')) {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    const wb = XLSX.read(new Uint8Array(ev.target.result), {type:'array'});
+                    const ws = wb.Sheets[wb.SheetNames[0]];
+                    const data = XLSX.utils.sheet_to_json(ws);
+                    let count = 0;
+                    data.forEach((row, i) => {
+                        const d = row['Descricao'] || row['Descrição'];
+                        const q = parseFloat(row['Quantidade']);
+                        const v = parseFloat(row['PrecoUnitario'] || row['Valor']);
+                        if(d && !isNaN(q) && !isNaN(v)) {
+                            itensOrcamento.push({id: Date.now()+i, desc: d, qtd: q, val: v, etapa: "Fundação", total: q*v, qtdRealizada: 0});
+                            count++;
+                        }
+                    });
+                    if(count>0) { alert(`${count} itens do Excel importados!`); renderizarOrcamento(); }
+                };
+                reader.readAsArrayBuffer(file);
+            }
+            e.target.value = '';
         });
 
-        // ==========================================
-        // EXECUÇÃO (TAB 3 - NOVA LÓGICA)
-        // ==========================================
-        
-        function renderizarAbaExecucao() {
+        // --- EXECUÇÃO ---
+        function renderizarExecucao() {
             const container = document.getElementById('container-fases-execucao');
             container.innerHTML = '';
-
             fasesObra.forEach(fase => {
-                // Filtra itens dessa fase
-                const itensDaFase = itensOrcamento.filter(i => i.etapa === fase);
-                
-                // Monta o HTML do Card
+                const itens = itensOrcamento.filter(i => i.etapa === fase);
                 const card = document.createElement('div');
-                card.className = "bg-white shadow rounded-lg overflow-hidden card-etapa border border-gray-100";
+                card.className = "bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden";
                 
-                let tabelaHTML = '';
+                let content = `<div class="px-4 py-3 bg-gray-50 border-b border-gray-200 flex justify-between items-center"><h3 class="font-bold text-gray-700">${fase}</h3><span class="text-xs bg-gray-200 px-2 py-1 rounded-full text-gray-600">${itens.length} itens</span></div>`;
                 
-                if (itensDaFase.length === 0) {
-                    tabelaHTML = `
-                        <div class="p-4 text-sm text-gray-400 italic text-center bg-gray-50">
-                            Nenhum item orçado para esta etapa.
-                        </div>
-                    `;
+                if(itens.length === 0) {
+                    content += `<div class="p-4 text-sm text-gray-400 italic text-center">Nenhum item planejado.</div>`;
                 } else {
-                    tabelaHTML = `
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="bg-gray-50">
-                                    <tr>
-                                        <th class="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase">Material/Serviço</th>
-                                        <th class="px-4 py-2 text-center text-xs font-bold text-gray-500 uppercase">Qtd Orçada</th>
-                                        <th class="px-4 py-2 text-center text-xs font-bold text-gray-500 uppercase w-32">Qtd Real</th>
-                                        <th class="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-gray-200">
-                                    ${itensDaFase.map(item => {
-                                        // Lógica de diferença
-                                        const diff = item.qtdRealizada - item.qtd;
-                                        let statusClass = "text-gray-500";
-                                        let statusText = "A iniciar";
-                                        
-                                        if (item.qtdRealizada > 0) {
-                                            if (diff > 0) {
-                                                statusClass = "text-red-600 font-bold";
-                                                statusText = `Excedeu +${diff}`;
-                                            } else if (diff < 0) {
-                                                statusClass = "text-green-600 font-bold";
-                                                statusText = `Saldo ${Math.abs(diff)}`;
-                                            } else {
-                                                statusClass = "text-blue-600";
-                                                statusText = "Exato";
-                                            }
-                                        }
-
-                                        return `
-                                            <tr class="hover:bg-gray-50">
-                                                <td class="px-4 py-2 text-sm text-gray-900">${item.desc}</td>
-                                                <td class="px-4 py-2 text-sm text-gray-700 text-center">${item.qtd}</td>
-                                                <td class="px-4 py-2 text-center">
-                                                    <input type="number" 
-                                                        value="${item.qtdRealizada > 0 ? item.qtdRealizada : ''}" 
-                                                        placeholder="0"
-                                                        onchange="atualizarQtdReal(${item.id}, this.value)"
-                                                        class="w-24 border border-gray-300 rounded px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500 text-center bg-white shadow-sm"
-                                                    >
-                                                </td>
-                                                <td class="px-4 py-2 text-sm ${statusClass}">
-                                                    ${statusText}
-                                                </td>
-                                            </tr>
-                                        `;
-                                    }).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    `;
+                    content += `<table class="min-w-full divide-y divide-gray-100"><thead class="bg-gray-50"><tr><th class="px-4 py-2 text-left text-xs text-gray-500">Item</th><th class="px-4 py-2 text-center text-xs text-gray-500">Previsto</th><th class="px-4 py-2 text-center text-xs text-gray-500">Realizado</th><th class="px-4 py-2 text-right text-xs text-gray-500">Status</th></tr></thead><tbody class="divide-y divide-gray-100">`;
+                    itens.forEach(item => {
+                        const diff = item.qtdRealizada - item.qtd;
+                        let status = `<span class="text-gray-400 text-xs">A iniciar</span>`;
+                        if(item.qtdRealizada > 0) {
+                            if(diff > 0) status = `<span class="text-red-600 text-xs font-bold bg-red-50 px-2 py-1 rounded">Excedeu +${diff}</span>`;
+                            else if(diff < 0) status = `<span class="text-green-600 text-xs font-bold bg-green-50 px-2 py-1 rounded">Saldo ${Math.abs(diff)}</span>`;
+                            else status = `<span class="text-blue-600 text-xs font-bold bg-blue-50 px-2 py-1 rounded">Exato</span>`;
+                        }
+                        content += `<tr><td class="px-4 py-2 text-sm text-gray-800">${item.desc}</td><td class="px-4 py-2 text-sm text-center text-gray-500">${item.qtd}</td><td class="px-4 py-2 text-center"><input type="number" class="w-20 border-gray-300 rounded text-center text-sm py-1 bg-gray-50 focus:bg-white focus:ring-indigo-500 focus:border-indigo-500" value="${item.qtdRealizada||''}" onchange="atualizarReal(${item.id}, this.value)" placeholder="0"></td><td class="px-4 py-2 text-right">${status}</td></tr>`;
+                    });
+                    content += `</tbody></table>`;
                 }
-
-                card.innerHTML = `
-                    <div class="bg-gray-50 px-4 py-3 border-b border-gray-200 flex justify-between items-center">
-                        <h3 class="text-lg font-semibold text-gray-800">${fase}</h3>
-                        <span class="text-xs font-medium bg-gray-200 text-gray-600 px-2 py-1 rounded-full">${itensDaFase.length} itens</span>
-                    </div>
-                    ${tabelaHTML}
-                `;
-
+                card.innerHTML = content;
                 container.appendChild(card);
             });
         }
-
-        // Atualiza a quantidade realizada no array principal e re-renderiza apenas visualmente se necessário
-        // (Neste caso, como é onchange, re-renderizar a aba toda pode tirar o foco, então vamos apenas atualizar o array e talvez o texto do status vizinho)
-        window.atualizarQtdReal = function(id, valor) {
-            const item = itensOrcamento.find(i => i.id === id);
-            if (item) {
-                item.qtdRealizada = parseFloat(valor) || 0;
-                // Re-renderiza a aba para atualizar cores e status
-                renderizarAbaExecucao();
-            }
+        window.atualizarReal = (id, val) => {
+            const it = itensOrcamento.find(i => i.id === id);
+            if(it) { it.qtdRealizada = parseFloat(val) || 0; renderizarExecucao(); }
         };
 
-        // Inicialização
-        document.addEventListener('DOMContentLoaded', () => {
-            filtrarClientes();
-            // Exemplo de dados iniciais para teste (Remova se quiser começar vazio)
-            // itensOrcamento.push({id: 1, desc: 'Cimento CP II', qtd: 50, val: 35, etapa: 'Fundação', total: 1750, qtdRealizada: 0, flag: false});
-            // itensOrcamento.push({id: 2, desc: 'Tijolo 8 furos', qtd: 1000, val: 1.20, etapa: 'Alvenaria', total: 1200, qtdRealizada: 0, flag: false});
-            // renderizarTabelaOrcamento();
+        // --- DOCUMENTAÇÃO PDF ---
+        document.getElementById('pdf-upload').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if(file && file.type === 'application/pdf') {
+                const url = URL.createObjectURL(file);
+                document.getElementById('pdf-embed').src = url;
+                document.getElementById('pdf-embed').classList.remove('hidden');
+                document.getElementById('pdf-placeholder').classList.add('hidden');
+            } else { alert('Selecione um PDF válido.'); }
         });
 
+        // --- SISTEMA DE BACKUP (EXPORTAR/IMPORTAR DADOS) ---
+        function baixarBackup() {
+            const data = { clientes: dbClientes, orcamento: itensOrcamento, versao: "1.0" };
+            const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `backup_obra_${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+        }
+
+        function carregarBackup(input) {
+            const file = input.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if(data.clientes && data.orcamento) {
+                        dbClientes = data.clientes;
+                        itensOrcamento = data.orcamento;
+                        filtrarClientes();
+                        renderizarOrcamento();
+                        alert('Backup carregado com sucesso!');
+                    } else { throw new Error("Formato inválido"); }
+                } catch(err) { alert("Erro ao ler arquivo de backup."); }
+            };
+            reader.readAsText(file);
+            input.value = '';
+        }
+
+        // --- DOWNLOAD DO PRÓPRIO CÓDIGO (AUTO-EXPORTAÇÃO) ---
+        function downloadCodigoFonte() {
+            const htmlContent = document.documentElement.outerHTML;
+            const blob = new Blob([htmlContent], {type: 'text/html'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'GestorObra_Projeto.html';
+            a.click();
+        }
+
+        // Start
+        filtrarClientes();
     </script>
 </body>
 </html>
