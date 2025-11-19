@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gestão de Obras</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Ícones Lucide -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .tab-btn.active { 
+            border-bottom: 2px solid #4f46e5; 
+            color: #4f46e5; 
+            font-weight: 600;
+        }
+        /* Estilo para input de arquivo */
+        .file-input::file-selector-button {
+            background-color: #e5e7eb;
+            color: #374151;
+            border: none;
+            padding: 0.5rem 1rem;
+            margin-right: 1rem;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .file-input::file-selector-button:hover {
+            background-color: #d1d5db;
+        }
+        .card-etapa {
+            transition: all 0.3s ease;
+        }
+        .card-etapa:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+    <!-- Barra de Navegação Superior -->
+    <nav class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="hammer" class="h-6 w-6 text-indigo-600"></i>
+                    <span class="text-xl font-bold text-gray-900">GestorObra</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Conteúdo Principal -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Sistema de Abas (Categorias) -->
+        <div class="border-b border-gray-200 mb-6 overflow-x-auto">
+            <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                <button onclick="openTab('dados-obra')" id="tab-dados-obra" class="tab-btn active whitespace-nowrap py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 flex items-center gap-2">
+                    <i data-lucide="users" class="w-4 h-4"></i>
+                    1. Clientes & Obras
+                </button>
+                <button onclick="openTab('orcamento')" id="tab-orcamento" class="tab-btn whitespace-nowrap py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 flex items-center gap-2">
+                    <i data-lucide="calculator" class="w-4 h-4"></i>
+                    2. Orçamento & Itens
+                </button>
+                <!-- NOVA ABA 3 -->
+                <button onclick="openTab('execucao')" id="tab-execucao" class="tab-btn whitespace-nowrap py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 flex items-center gap-2">
+                    <i data-lucide="hard-hat" class="w-4 h-4"></i>
+                    3. Execução & Consumo
+                </button>
+            </nav>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- CATEGORIA 1: DADOS DA OBRA & CLIENTE       -->
+        <!-- ========================================== -->
+        <div id="dados-obra" class="tab-content active animate-fade-in">
+            <div id="view-lista-clientes">
+                <div class="bg-white shadow rounded-lg p-6 mb-6">
+                    <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
+                        <h2 class="text-xl font-bold text-gray-900">Gestão de Clientes</h2>
+                        <button onclick="mostrarFormularioCadastro()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-colors">
+                            <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                            Novo Cliente
+                        </button>
+                    </div>
+
+                    <!-- Barra de Pesquisa -->
+                    <div class="relative mb-6">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i data-lucide="search" class="h-5 w-5 text-gray-400"></i>
+                        </div>
+                        <input type="text" id="input-busca-cliente" onkeyup="filtrarClientes()" 
+                               class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" 
+                               placeholder="Pesquisar por Nome, CPF ou CNPJ...">
+                    </div>
+
+                    <!-- Lista de Resultados -->
+                    <div class="overflow-x-auto border border-gray-200 rounded-md">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome / Razão Social</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CPF / CNPJ</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Obra / Local</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contato</th>
+                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-clientes" class="bg-white divide-y divide-gray-200"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Formulário de Cadastro (Oculto) -->
+            <div id="view-form-cliente" class="hidden">
+                <div class="bg-white shadow rounded-lg p-6">
+                    <div class="flex justify-between items-center mb-6 border-b pb-4">
+                        <h2 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+                            <i data-lucide="user-plus" class="w-5 h-5"></i>
+                            Cadastrar Novo Cliente
+                        </h2>
+                        <button onclick="cancelarCadastro()" class="text-gray-500 hover:text-gray-700 text-sm">Cancelar</button>
+                    </div>
+                    <form id="form-cadastro" onsubmit="event.preventDefault(); salvarCliente();">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700">Nome</label>
+                                <input type="text" id="cad-nome" class="mt-1 block w-full border p-2 rounded-md" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Documento</label>
+                                <input type="text" id="cad-doc" class="mt-1 block w-full border p-2 rounded-md" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Telefone</label>
+                                <input type="text" id="cad-tel" class="mt-1 block w-full border p-2 rounded-md">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700">Endereço</label>
+                                <input type="text" id="cad-endereco" class="mt-1 block w-full border p-2 rounded-md">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700">Endereço Obra</label>
+                                <input type="text" id="cad-obra-endereco" class="mt-1 block w-full border p-2 rounded-md">
+                            </div>
+                        </div>
+                        <div class="flex justify-end gap-3">
+                            <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Salvar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- CATEGORIA 2: ORÇAMENTO & ITENS             -->
+        <!-- ========================================== -->
+        <div id="orcamento" class="tab-content">
+            <div class="bg-white shadow rounded-lg p-6">
+                
+                <div class="flex justify-between items-center mb-6 border-b pb-4">
+                    <h2 class="text-lg font-medium text-gray-900 flex items-center gap-2">
+                        <i data-lucide="shopping-cart" class="w-5 h-5 text-gray-500"></i>
+                        Orçamento Detalhado
+                    </h2>
+                    <div class="text-right">
+                        <span class="text-sm text-gray-500">Total Previsto:</span>
+                        <span id="display-total" class="block text-2xl font-bold text-indigo-600">R$ 0,00</span>
+                    </div>
+                </div>
+
+                <!-- Importação XML -->
+                <div class="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
+                    <h3 class="text-sm font-semibold text-blue-800 mb-2 flex items-center gap-2">
+                        <i data-lucide="file-code" class="w-4 h-4"></i> Importar XML
+                    </h3>
+                    <input type="file" id="xml-input" accept=".xml" class="file-input block w-full text-sm text-gray-500">
+                </div>
+
+                <!-- Formulário de Adição de Item -->
+                <div class="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6 items-end bg-gray-50 p-4 rounded-md border border-gray-200">
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-medium text-gray-500 uppercase">Descrição</label>
+                        <input type="text" id="item-desc" class="w-full border-gray-300 rounded-md shadow-sm border p-2 text-sm">
+                    </div>
+                    <!-- NOVO CAMPO: SELETOR DE ETAPA -->
+                    <div class="md:col-span-1">
+                        <label class="block text-xs font-medium text-gray-500 uppercase">Etapa</label>
+                        <select id="item-etapa" class="w-full border-gray-300 rounded-md shadow-sm border p-2 text-sm">
+                            <option value="Fundação">Fundação</option>
+                            <option value="Alvenaria">Alvenaria</option>
+                            <option value="Pilares e Vigas">Pilares e Vigas</option>
+                            <option value="Instalação Elétrica">Instalação Elétrica</option>
+                            <option value="Estrutura das Lajes">Estrutura das Lajes</option>
+                            <option value="Cobertura">Cobertura</option>
+                            <option value="Revestimento">Revestimento</option>
+                            <option value="Impermeabilização">Impermeabilização</option>
+                            <option value="Acabamento">Acabamento</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 uppercase">Qtd</label>
+                        <input type="number" id="item-qtd" class="w-full border-gray-300 rounded-md shadow-sm border p-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 uppercase">Valor Unit.</label>
+                        <input type="number" id="item-val" class="w-full border-gray-300 rounded-md shadow-sm border p-2 text-sm">
+                    </div>
+                    <button onclick="adicionarItemManual()" class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-md text-sm font-medium flex justify-center items-center gap-1 transition-colors">
+                        <i data-lucide="plus" class="w-4 h-4"></i> Add
+                    </button>
+                </div>
+
+                <!-- Tabela de Itens -->
+                <div class="overflow-x-auto border border-gray-200 rounded-lg max-h-[500px] overflow-y-auto">
+                    <table class="min-w-full divide-y divide-gray-200 sticky top-0">
+                        <thead class="bg-gray-50 sticky top-0 z-10 shadow-sm">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Etapa</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Qtd</th>
+                                <th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-10">F</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit.</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                                <th class="px-6 py-3"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabela-corpo" class="bg-white divide-y divide-gray-200"></tbody>
+                    </table>
+                </div>
+                <div class="mt-4 flex justify-end">
+                    <button onclick="limparTabela()" class="text-xs text-red-500 hover:text-red-700 hover:underline">Limpar lista</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- CATEGORIA 3: EXECUÇÃO E ETAPAS (NOVO)      -->
+        <!-- ========================================== -->
+        <div id="execucao" class="tab-content">
+            <div class="mb-6 bg-yellow-50 border border-yellow-200 p-4 rounded-md text-yellow-800 text-sm flex items-center gap-3">
+                <i data-lucide="info" class="w-5 h-5"></i>
+                <div>
+                    <strong class="block">Modo de Execução</strong>
+                    Os itens cadastrados na aba "Orçamento" aparecem aqui automaticamente. Preencha o campo "Qtd Real" para controlar o consumo.
+                    Se usar mais do que o previsto, o sistema alertará em vermelho.
+                </div>
+            </div>
+
+            <!-- Container para os Cards das Fases -->
+            <div id="container-fases-execucao" class="space-y-8">
+                <!-- Os cards serão gerados via JS aqui -->
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // Inicializa Ícones
+        lucide.createIcons();
+
+        // Estado da Aplicação
+        let dbClientes = [{ id: 1, nome: 'Cliente Exemplo', doc: '000.000.000-00', tel: '9999-9999', endereco: 'Rua A', obraEndereco: 'Rua B', valorIni: 0, valorProj: 0 }];
+        let itensOrcamento = []; // Array principal de dados do orçamento
+        let totalGeral = 0;
+
+        // Fases do Projeto (Definição das etapas)
+        const fasesObra = [
+            "Fundação", 
+            "Alvenaria", 
+            "Pilares e Vigas", 
+            "Instalação Elétrica", 
+            "Estrutura das Lajes", 
+            "Cobertura", 
+            "Revestimento", 
+            "Impermeabilização", 
+            "Acabamento"
+        ];
+
+        // --- Lógica das Abas ---
+        function openTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => {
+                b.classList.remove('active');
+                b.classList.remove('text-indigo-600');
+                b.classList.remove('border-indigo-500');
+            });
+            document.getElementById(tabId).classList.add('active');
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+
+            // Se abriu a aba de execução, renderiza ela
+            if (tabId === 'execucao') {
+                renderizarAbaExecucao();
+            }
+        }
+
+        // ==========================================
+        // CLIENTES
+        // ==========================================
+        function mostrarFormularioCadastro() {
+            document.getElementById('view-lista-clientes').classList.add('hidden');
+            document.getElementById('view-form-cliente').classList.remove('hidden');
+            document.getElementById('form-cadastro').reset();
+        }
+        function cancelarCadastro() {
+            document.getElementById('view-form-cliente').classList.add('hidden');
+            document.getElementById('view-lista-clientes').classList.remove('hidden');
+        }
+        function salvarCliente() {
+            const novo = {
+                id: Date.now(),
+                nome: document.getElementById('cad-nome').value,
+                doc: document.getElementById('cad-doc').value,
+                tel: document.getElementById('cad-tel').value,
+                endereco: document.getElementById('cad-endereco').value,
+                obraEndereco: document.getElementById('cad-obra-endereco').value
+            };
+            dbClientes.push(novo);
+            alert('Cliente salvo!');
+            cancelarCadastro();
+            filtrarClientes();
+        }
+        function filtrarClientes() {
+            const termo = document.getElementById('input-busca-cliente').value.toLowerCase();
+            const tbody = document.getElementById('tbody-clientes');
+            tbody.innerHTML = '';
+            const filtrados = dbClientes.filter(c => c.nome.toLowerCase().includes(termo) || c.doc.includes(termo));
+            
+            if (filtrados.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-500">Nenhum cliente encontrado.</td></tr>`;
+                return;
+            }
+
+            filtrados.forEach(c => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="px-6 py-4 text-sm font-medium text-gray-900">${c.nome}</td>
+                        <td class="px-6 py-4 text-sm text-gray-500">${c.doc}</td>
+                        <td class="px-6 py-4 text-sm text-gray-500">${c.obraEndereco || '-'}</td>
+                        <td class="px-6 py-4 text-sm text-gray-500">${c.tel}</td>
+                        <td class="px-6 py-4 text-right text-sm font-medium">
+                           <button class="text-red-600 hover:text-red-900" onclick="excluirCliente(${c.id})"><i data-lucide="trash" class="w-4 h-4"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+            lucide.createIcons();
+        }
+        function excluirCliente(id) {
+            if(confirm('Excluir?')) {
+                dbClientes = dbClientes.filter(c => c.id !== id);
+                filtrarClientes();
+            }
+        }
+
+        // ==========================================
+        // ORÇAMENTO (TAB 2)
+        // ==========================================
+        
+        // Renderiza a tabela do orçamento baseada no array itensOrcamento
+        function renderizarTabelaOrcamento() {
+            const tbody = document.getElementById('tabela-corpo');
+            tbody.innerHTML = '';
+            totalGeral = 0;
+
+            itensOrcamento.forEach((item, index) => {
+                totalGeral += item.total;
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="px-6 py-4 text-sm text-gray-900">${item.desc}</td>
+                    <td class="px-6 py-4 text-sm text-gray-500"><span class="bg-gray-100 px-2 py-1 rounded text-xs">${item.etapa}</span></td>
+                    <td class="px-6 py-4 text-sm text-gray-500">${item.qtd}</td>
+                    <td class="px-2 py-4 text-center"><input type="checkbox" class="cursor-pointer" ${item.flag ? 'checked' : ''}></td>
+                    <td class="px-6 py-4 text-sm text-gray-500">${item.val.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</td>
+                    <td class="px-6 py-4 text-sm font-bold text-gray-700">${item.total.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</td>
+                    <td class="px-6 py-4 text-right">
+                        <button onclick="removerItem(${index})" class="text-red-600 hover:text-red-900"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            
+            document.getElementById('display-total').innerText = totalGeral.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
+            lucide.createIcons();
+        }
+
+        function adicionarItemManual() {
+            const desc = document.getElementById('item-desc').value;
+            const qtd = parseFloat(document.getElementById('item-qtd').value);
+            const val = parseFloat(document.getElementById('item-val').value);
+            const etapa = document.getElementById('item-etapa').value;
+
+            if (!desc || isNaN(qtd) || isNaN(val)) {
+                alert("Preencha todos os campos corretamente");
+                return;
+            }
+
+            // Adiciona ao array principal
+            itensOrcamento.push({
+                id: Date.now(),
+                desc,
+                qtd,
+                val,
+                etapa,
+                total: qtd * val,
+                flag: false,
+                qtdRealizada: 0 // Campo para a etapa 3
+            });
+
+            // Limpa campos
+            document.getElementById('item-desc').value = '';
+            document.getElementById('item-qtd').value = '';
+            document.getElementById('item-val').value = '';
+            document.getElementById('item-desc').focus();
+
+            renderizarTabelaOrcamento();
+        }
+
+        function removerItem(index) {
+            itensOrcamento.splice(index, 1);
+            renderizarTabelaOrcamento();
+        }
+
+        function limparTabela() {
+            if(confirm("Apagar tudo?")) {
+                itensOrcamento = [];
+                renderizarTabelaOrcamento();
+            }
+        }
+
+        // Importação XML (Adaptada para o novo formato)
+        document.getElementById('xml-input').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                const parser = new DOMParser();
+                const xml = parser.parseFromString(ev.target.result, "text/xml");
+                const els = xml.getElementsByTagName("*");
+                let count = 0;
+                
+                for (let i=0; i<els.length; i++) {
+                    const el = els[i];
+                    const d = el.querySelector("Descricao, Description")?.textContent;
+                    const q = parseFloat(el.querySelector("Quantidade, Qtd")?.textContent);
+                    const v = parseFloat(el.querySelector("Valor, Preco")?.textContent);
+                    
+                    if (d && !isNaN(q) && !isNaN(v)) {
+                        itensOrcamento.push({
+                            id: Date.now() + i,
+                            desc: d, qtd: q, val: v,
+                            etapa: "Fundação", // Padrão se vier sem etapa
+                            total: q*v, flag: false, qtdRealizada: 0
+                        });
+                        count++;
+                    }
+                }
+                if (count > 0) {
+                    alert(`${count} importados!`);
+                    renderizarTabelaOrcamento();
+                }
+                e.target.value = '';
+            };
+            reader.readAsText(file);
+        });
+
+        // ==========================================
+        // EXECUÇÃO (TAB 3 - NOVA LÓGICA)
+        // ==========================================
+        
+        function renderizarAbaExecucao() {
+            const container = document.getElementById('container-fases-execucao');
+            container.innerHTML = '';
+
+            fasesObra.forEach(fase => {
+                // Filtra itens dessa fase
+                const itensDaFase = itensOrcamento.filter(i => i.etapa === fase);
+                
+                // Monta o HTML do Card
+                const card = document.createElement('div');
+                card.className = "bg-white shadow rounded-lg overflow-hidden card-etapa border border-gray-100";
+                
+                let tabelaHTML = '';
+                
+                if (itensDaFase.length === 0) {
+                    tabelaHTML = `
+                        <div class="p-4 text-sm text-gray-400 italic text-center bg-gray-50">
+                            Nenhum item orçado para esta etapa.
+                        </div>
+                    `;
+                } else {
+                    tabelaHTML = `
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase">Material/Serviço</th>
+                                        <th class="px-4 py-2 text-center text-xs font-bold text-gray-500 uppercase">Qtd Orçada</th>
+                                        <th class="px-4 py-2 text-center text-xs font-bold text-gray-500 uppercase w-32">Qtd Real</th>
+                                        <th class="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-200">
+                                    ${itensDaFase.map(item => {
+                                        // Lógica de diferença
+                                        const diff = item.qtdRealizada - item.qtd;
+                                        let statusClass = "text-gray-500";
+                                        let statusText = "A iniciar";
+                                        
+                                        if (item.qtdRealizada > 0) {
+                                            if (diff > 0) {
+                                                statusClass = "text-red-600 font-bold";
+                                                statusText = `Excedeu +${diff}`;
+                                            } else if (diff < 0) {
+                                                statusClass = "text-green-600 font-bold";
+                                                statusText = `Saldo ${Math.abs(diff)}`;
+                                            } else {
+                                                statusClass = "text-blue-600";
+                                                statusText = "Exato";
+                                            }
+                                        }
+
+                                        return `
+                                            <tr class="hover:bg-gray-50">
+                                                <td class="px-4 py-2 text-sm text-gray-900">${item.desc}</td>
+                                                <td class="px-4 py-2 text-sm text-gray-700 text-center">${item.qtd}</td>
+                                                <td class="px-4 py-2 text-center">
+                                                    <input type="number" 
+                                                        value="${item.qtdRealizada > 0 ? item.qtdRealizada : ''}" 
+                                                        placeholder="0"
+                                                        onchange="atualizarQtdReal(${item.id}, this.value)"
+                                                        class="w-24 border border-gray-300 rounded px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500 text-center bg-white shadow-sm"
+                                                    >
+                                                </td>
+                                                <td class="px-4 py-2 text-sm ${statusClass}">
+                                                    ${statusText}
+                                                </td>
+                                            </tr>
+                                        `;
+                                    }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                }
+
+                card.innerHTML = `
+                    <div class="bg-gray-50 px-4 py-3 border-b border-gray-200 flex justify-between items-center">
+                        <h3 class="text-lg font-semibold text-gray-800">${fase}</h3>
+                        <span class="text-xs font-medium bg-gray-200 text-gray-600 px-2 py-1 rounded-full">${itensDaFase.length} itens</span>
+                    </div>
+                    ${tabelaHTML}
+                `;
+
+                container.appendChild(card);
+            });
+        }
+
+        // Atualiza a quantidade realizada no array principal e re-renderiza apenas visualmente se necessário
+        // (Neste caso, como é onchange, re-renderizar a aba toda pode tirar o foco, então vamos apenas atualizar o array e talvez o texto do status vizinho)
+        window.atualizarQtdReal = function(id, valor) {
+            const item = itensOrcamento.find(i => i.id === id);
+            if (item) {
+                item.qtdRealizada = parseFloat(valor) || 0;
+                // Re-renderiza a aba para atualizar cores e status
+                renderizarAbaExecucao();
+            }
+        };
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', () => {
+            filtrarClientes();
+            // Exemplo de dados iniciais para teste (Remova se quiser começar vazio)
+            // itensOrcamento.push({id: 1, desc: 'Cimento CP II', qtd: 50, val: 35, etapa: 'Fundação', total: 1750, qtdRealizada: 0, flag: false});
+            // itensOrcamento.push({id: 2, desc: 'Tijolo 8 furos', qtd: 1000, val: 1.20, etapa: 'Alvenaria', total: 1200, qtdRealizada: 0, flag: false});
+            // renderizarTabelaOrcamento();
+        });
+
+    </script>
+</body>
+</html>
